@@ -1,0 +1,6 @@
+bin
+obj
+/packages
+Vitality.sln.DotSettings.user
+.idea
+.vs
