@@ -14,7 +14,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.0.1";
+	private const string ModVersion = "1.0.2";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	public void Awake()
