@@ -14,16 +14,17 @@ namespace Vitality;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 [BepInIncompatibility("randyknapp.mods.epicloot")]
+[BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.0";
+	private const string ModVersion = "1.1.1";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
 	private static ConfigEntry<Toggle> serverConfigLocked = null!;
-	private static ConfigEntry<int> bonusHP = null!;
+	private static ConfigEntry<float> bonusHPMultiplier = null!;
 	private static ConfigEntry<int> bonusHPRegenLevel = null!;
 	private static ConfigEntry<float> bonusHPRegen = null!;
 	private static ConfigEntry<int> foodBonusLevel = null!;
@@ -69,7 +70,7 @@ public class Vitality : BaseUnityPlugin
 
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
-		bonusHP = config("2 - Vitality", "Bonus HP", 25, new ConfigDescription("Bonus HP at skill level 100.", new AcceptableValueRange<int>(1, 300)));
+		bonusHPMultiplier = config("2 - Vitality", "Base Health Multiplier", 2f, new ConfigDescription("Multiplier for your base health at skill level 100.", new AcceptableValueRange<float>(1f, 20f)));
 		bonusHPRegenLevel = config("2 - Vitality", "Minimum Level for Bonus HP Regen", 30, new ConfigDescription("Skill level required to gain bonus HP regen. 0 is disabled.", new AcceptableValueRange<int>(0, 100), new ConfigurationManagerAttributes { ShowRangeAsPercent = false }));
 		bonusHPRegen = config("2 - Vitality", "Bonus HP Regen", 1f, new ConfigDescription("Bonus HP regen gained once the level requirement is met.", new AcceptableValueRange<float>(0.5f, 10f)));
 		foodBonusLevel = config("2 - Vitality", "Minimum Level for Food Bonus", 50, new ConfigDescription("Skill level required to gain bonus HP from food. 0 is disabled.", new AcceptableValueRange<int>(0, 100), new ConfigurationManagerAttributes { ShowRangeAsPercent = false }));
@@ -108,14 +109,14 @@ public class Vitality : BaseUnityPlugin
 		}
 	}
 
-	[HarmonyPriority(Priority.High)]
 	[HarmonyPatch(typeof(Player), nameof(Player.GetBaseFoodHP))]
 	private class IncreaseBaseHealth
 	{
 		[UsedImplicitly]
+		[HarmonyPriority(Priority.LowerThanNormal)]
 		private static void Postfix(Player __instance, ref float __result)
 		{
-			__result += bonusHP.Value * __instance.GetSkillFactor("Vitality");
+			__result *= 1 + (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
 		}
 	}
 
