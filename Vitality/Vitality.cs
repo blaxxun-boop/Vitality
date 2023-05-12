@@ -95,7 +95,7 @@ public class Vitality : BaseUnityPlugin
 		[HarmonyPriority(Priority.LowerThanNormal)]
 		private static void Postfix(Player __instance, ref float hp)
 		{
-			var baseHp = __instance.m_baseHP;
+			var baseHp = __instance.GetBaseFoodHP();
 
 			// Base HP is already factored in by the GetTotalFoodValue call, so don't add 1 to the multiplier.
 			var multiplier = (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
