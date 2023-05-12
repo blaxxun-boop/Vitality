@@ -18,7 +18,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.1";
+	private const string ModVersion = "1.1.2";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -89,34 +89,17 @@ public class Vitality : BaseUnityPlugin
 	}
 
 	[HarmonyPatch(typeof(Player), nameof(Player.GetTotalFoodValue))]
-	private class PlayerUseMethodForBaseHP
-	{
-		[UsedImplicitly]
-		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-		{
-			FieldInfo baseHpField = AccessTools.DeclaredField(typeof(Player), nameof(Player.m_baseHP));
-			foreach (CodeInstruction instruction in instructions)
-			{
-				if (instruction.opcode == OpCodes.Ldfld && instruction.OperandIs(baseHpField))
-				{
-					yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(Player), nameof(Player.GetBaseFoodHP)));
-				}
-				else
-				{
-					yield return instruction;
-				}
-			}
-		}
-	}
-
-	[HarmonyPatch(typeof(Player), nameof(Player.GetBaseFoodHP))]
 	private class IncreaseBaseHealth
-	{
-		[UsedImplicitly]
+    {
 		[HarmonyPriority(Priority.LowerThanNormal)]
-		private static void Postfix(Player __instance, ref float __result)
+		private static void Postfix(Player __instance, ref float hp)
 		{
-			__result *= 1 + (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
+			var baseHp = __instance.m_baseHP;
+
+            // Base HP is already factored in by the GetTotalFoodValue call, so don't add 1 to the multiplier.
+            var multiplier = (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
+
+			hp += multiplier * baseHp;
 		}
 	}
 
