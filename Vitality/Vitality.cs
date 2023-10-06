@@ -18,7 +18,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.1";
+	private const string ModVersion = "1.1.2";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -48,7 +48,7 @@ public class Vitality : BaseUnityPlugin
 	private enum Toggle
 	{
 		On = 1,
-		Off = 0
+		Off = 0,
 	}
 
 	private class ConfigurationManagerAttributes
@@ -62,7 +62,7 @@ public class Vitality : BaseUnityPlugin
 	{
 		vitality = new Skill("Vitality", "vitality-icon.png")
 		{
-			Configurable = false
+			Configurable = false,
 		};
 		vitality.Description.English("Increases your base health.");
 		vitality.Name.German("Vitalität");
@@ -151,7 +151,7 @@ public class Vitality : BaseUnityPlugin
 		private static IEnumerable<MethodInfo> TargetMethods() => new[]
 		{
 			AccessTools.DeclaredMethod(typeof(Player), nameof(Player.EatFood)),
-			AccessTools.DeclaredMethod(typeof(Player), nameof(Player.UpdateFood))
+			AccessTools.DeclaredMethod(typeof(Player), nameof(Player.UpdateFood)),
 		};
 
 		private static float ManipulateFoodHealth(float health) => health * (1 + (foodBonusLevel.Value > 0 && foodBonusLevel.Value <= Player.m_localPlayer.GetSkillFactor("Vitality") * 100f ? foodBonus.Value / 100f : 0));
