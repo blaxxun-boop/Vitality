@@ -18,7 +18,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.2";
+	private const string ModVersion = "1.1.3";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
