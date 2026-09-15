@@ -18,7 +18,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.4";
+	private const string ModVersion = "1.1.5";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -88,6 +88,14 @@ public class Vitality : BaseUnityPlugin
 		harmony.PatchAll(assembly);
 	}
 
+	[HarmonyPatch(typeof(Player), nameof(Player.GetBaseFoodHP))]
+	private class IncreaseBaseHealth
+	{
+		[UsedImplicitly]
+		[HarmonyPriority(Priority.LowerThanNormal)]
+		private static void Postfix(Player __instance, ref float __result) => __result *= 1 + (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
+	}
+
 	[HarmonyPatch(typeof(Player), nameof(Player.GetTotalFoodValue))]
 	private class PlayerUseMethodForBaseHP
 	{
@@ -106,17 +114,6 @@ public class Vitality : BaseUnityPlugin
 					yield return instruction;
 				}
 			}
-		}
-	}
-
-	[HarmonyPatch(typeof(Player), nameof(Player.GetBaseFoodHP))]
-	private class IncreaseBaseHealth
-	{
-		[UsedImplicitly]
-		[HarmonyPriority(Priority.LowerThanNormal)]
-		private static void Postfix(Player __instance, ref float __result)
-		{
-			__result *= 1 + (bonusHPMultiplier.Value - 1) * __instance.GetSkillFactor("Vitality");
 		}
 	}
 
@@ -156,13 +153,7 @@ public class Vitality : BaseUnityPlugin
 
 		private static float ManipulateFoodHealth(float health) => health * (1 + (foodBonusLevel.Value > 0 && foodBonusLevel.Value <= Player.m_localPlayer.GetSkillFactor("Vitality") * 100f ? foodBonus.Value / 100f : 0));
 
-		private static float tmpPtr;
-
-		private static unsafe float* ManipulateFoodHealthBoxed(float* health)
-		{
-			tmpPtr = ManipulateFoodHealth(*health);
-			fixed (float* addr = &tmpPtr) return addr;
-		}
+		private static void ManipulateFoodHealthRef(ref float health) => health = ManipulateFoodHealth(health);
 
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
@@ -172,7 +163,15 @@ public class Vitality : BaseUnityPlugin
 				yield return instruction;
 				if ((instruction.opcode == OpCodes.Ldfld || instruction.opcode == OpCodes.Ldflda) && instruction.OperandIs(m_food))
 				{
-					yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), instruction.opcode == OpCodes.Ldflda ? nameof(ManipulateFoodHealthBoxed) : nameof(ManipulateFoodHealth)));
+					if (instruction.opcode == OpCodes.Ldflda)
+					{
+						yield return new CodeInstruction(OpCodes.Dup);
+						yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), nameof(ManipulateFoodHealthRef)));
+					}
+					else
+					{
+						yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), nameof(ManipulateFoodHealth)));
+					}
 				}
 			}
 		}
