@@ -18,7 +18,7 @@ namespace Vitality;
 public class Vitality : BaseUnityPlugin
 {
 	private const string ModName = "Vitality";
-	private const string ModVersion = "1.1.5";
+	private const string ModVersion = "1.1.6";
 	private const string ModGUID = "org.bepinex.plugins.vitality";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -153,24 +153,21 @@ public class Vitality : BaseUnityPlugin
 
 		private static float ManipulateFoodHealth(float health) => health * (1 + (foodBonusLevel.Value > 0 && foodBonusLevel.Value <= Player.m_localPlayer.GetSkillFactor("Vitality") * 100f ? foodBonus.Value / 100f : 0));
 
-		private static void ManipulateFoodHealthRef(ref float health) => health = ManipulateFoodHealth(health);
-
-		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
 		{
 			FieldInfo m_food = AccessTools.DeclaredField(typeof(ItemDrop.ItemData.SharedData), nameof(ItemDrop.ItemData.SharedData.m_food));
 			foreach (CodeInstruction instruction in instructions)
 			{
 				yield return instruction;
-				if ((instruction.opcode == OpCodes.Ldfld || instruction.opcode == OpCodes.Ldflda) && instruction.OperandIs(m_food))
+				if (instruction.LoadsField(m_food, byAddress: true) || instruction.LoadsField(m_food, byAddress: false))
 				{
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), nameof(ManipulateFoodHealth)));
 					if (instruction.opcode == OpCodes.Ldflda)
 					{
-						yield return new CodeInstruction(OpCodes.Dup);
-						yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), nameof(ManipulateFoodHealthRef)));
-					}
-					else
-					{
-						yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(IncreaseFoodHealth), nameof(ManipulateFoodHealth)));
+						instruction.opcode = OpCodes.Ldfld;
+						LocalBuilder local = ilg.DeclareLocal(typeof(float));
+						yield return new CodeInstruction(OpCodes.Stloc, local);
+						yield return new CodeInstruction(OpCodes.Ldloca, local);
 					}
 				}
 			}
